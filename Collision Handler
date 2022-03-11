@@ -1,0 +1,130 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+public class CollisionHandler : MonoBehaviour
+{
+    [SerializeField] float levelLoadDelay = 1f;
+    [SerializeField] AudioClip crashSoundEffect;
+    [SerializeField] AudioClip winSoundEffect;
+
+
+    [SerializeField] ParticleSystem crashParticles;
+    [SerializeField] ParticleSystem winParticles;
+    AudioSource audioSource;
+    ParticleSystem Part;
+
+    bool isTransitioning = false;
+    bool isGodModeOn = false;
+
+    void Start()
+    {
+        audioSource = GetComponent<AudioSource>();
+
+    }
+
+    void Update()
+    {
+       // cheats();
+    }
+
+//REMOVE BEFORE PUBLISH
+    void cheats()
+    {
+        if (Input.GetKeyDown(KeyCode.L))
+        {
+            LoadNextLevel();
+        }
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            GodMode();
+        }
+    }
+
+    void GodMode()
+    {
+        
+        if (isGodModeOn == false)
+        {
+            isTransitioning = true;
+            Debug.Log("God Mode Enabled");
+        }
+        else
+        {
+            isTransitioning = false;
+            Debug.Log("God Mode disabled");
+        }
+        isGodModeOn = !isGodModeOn;
+    }
+
+    void OnCollisionEnter(Collision other)
+    {
+        if (isTransitioning) { return; }
+
+        switch (other.gameObject.tag)
+        {
+            case "Friendly":
+                Debug.Log("hit a friendly");
+                break;
+            case "Untagged":
+                StartCrashSequence();
+                break;
+            case "Finish":
+                StartFinishSequence();
+                break;
+        }
+    }
+
+
+
+    void StopMovementControlls()
+    {
+        GetComponent<Movement>().enabled = false;
+    }
+
+
+
+    void StartFinishSequence()
+    {
+        winParticles.Play();
+        isTransitioning = true;
+        audioSource.Stop();
+        audioSource.PlayOneShot(winSoundEffect);
+        StopMovementControlls();
+        Invoke("LoadNextLevel", levelLoadDelay);
+    }
+
+
+
+    void StartCrashSequence()
+    {
+        crashParticles.Play();
+        isTransitioning = true;
+        audioSource.Stop();
+        audioSource.PlayOneShot(crashSoundEffect);
+        StopMovementControlls();
+        Invoke("ReloadLevel", levelLoadDelay);
+
+    }
+
+
+
+    void ReloadLevel()
+    {
+        int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
+        SceneManager.LoadScene(currentSceneIndex);
+    }
+
+
+
+    void LoadNextLevel()
+    {
+        int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
+        int nextSceneIndex = currentSceneIndex + 1;
+        if (nextSceneIndex == SceneManager.sceneCountInBuildSettings)
+        {
+            nextSceneIndex = 0;
+        }
+        SceneManager.LoadScene(nextSceneIndex);
+    }
+}
